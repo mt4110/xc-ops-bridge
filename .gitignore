@@ -1,0 +1,37 @@
+# macOS
+.DS_Store
+
+# local artifacts (must never be committed)
+.local/
+
+# Xcode
+DerivedData/
+*.xcresult
+*.xccheckout
+*.xcuserstate
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# User-specific Xcode data
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# SwiftPM
+.build/
+Packages/
+Package.resolved
+
+# Editors
+.idea/
+.zed/
+.nvim/
+*.swp
+*.swo
+
+# VSCode: keep recommended files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+ops/xcode.env

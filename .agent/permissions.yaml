@@ -1,0 +1,21 @@
+terminal:
+  policy: auto
+  allow:
+    - "make bootstrap"
+    - "make build"
+    - "make test"
+    - "make clean"
+    - "make doctor"
+    - "make open"
+    - "bash ops/bootstrap.sh"
+    - "bash ops/xc build"
+    - "bash ops/xc test"
+    - "bash ops/xc clean"
+    - "bash ops/xc doctor"
+    - "bash ops/xc open"
+    - "git status"
+    - "git diff"
+  deny:
+    - "rm -rf"
+    - "git push"
+    - "git tag"

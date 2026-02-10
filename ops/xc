@@ -1,0 +1,111 @@
+#!/bin/sh
+set -eu
+
+say() { printf "%s\n" "$*"; }
+die() { say "ERROR: $*"; exit 1; }
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+ENV_FILE="$ROOT/ops/xcode.env"
+
+usage() {
+  cat <<'USAGE'
+xc-ops-bridge: ops/xc
+
+Usage:
+  bash ops/xc <command> [xcodebuild_args...]
+
+Commands:
+  doctor   - check tools/env (read-only)
+  clean    - xcodebuild clean build
+  build    - xcodebuild build
+  test     - xcodebuild test (if scheme supports)
+  open     - open workspace/project in Xcode
+
+Argument forwarding:
+  - Recommended: bash ops/xc build -quiet
+  - Back-compat: bash ops/xc build -- -quiet   (the -- is ignored)
+USAGE
+}
+
+[ "${1:-}" = "" ] && usage && exit 1
+CMD="$1"
+shift || true
+
+# Backward compatibility: accept optional "--"
+if [ "${1:-}" = "--" ]; then
+  shift || true
+fi
+
+# Extra args forwarded to xcodebuild
+EXTRA_ARGS="$*"
+
+# doctor doesn't require env file
+if [ "$CMD" = "doctor" ]; then
+  exec sh "$ROOT/ops/doctor.sh"
+fi
+
+[ -f "$ENV_FILE" ] || die "missing ops/xcode.env. Run: make bootstrap"
+
+# shellcheck disable=SC1090
+. "$ENV_FILE"
+
+SCHEME="${XCODE_SCHEME:-}"
+CONFIGURATION="${XCODE_CONFIGURATION:-Debug}"
+DESTINATION="${XCODE_DESTINATION:-platform=macOS,arch=arm64}"
+DERIVED_DATA="${XCODE_DERIVED_DATA:-.local/xcode/DerivedData}"
+RESULT_BUNDLE="${XCODE_RESULT_BUNDLE:-.local/xcode/TestResults.xcresult}"
+
+[ -n "$SCHEME" ] || die "XCODE_SCHEME is empty in ops/xcode.env"
+
+# Prefer workspace if set and exists; else project
+XCB_KIND=""
+XCB_PATH=""
+
+if [ -n "${XCODE_WORKSPACE:-}" ] && [ -f "$ROOT/$XCODE_WORKSPACE" ]; then
+  XCB_KIND="-workspace"
+  XCB_PATH="$ROOT/$XCODE_WORKSPACE"
+elif [ -n "${XCODE_PROJECT:-}" ] && [ -f "$ROOT/$XCODE_PROJECT" ]; then
+  XCB_KIND="-project"
+  XCB_PATH="$ROOT/$XCODE_PROJECT"
+else
+  die "set XCODE_WORKSPACE or XCODE_PROJECT (and ensure file exists)"
+fi
+
+run_xcodebuild() {
+  ACTION="$1"
+  shift || true
+  mkdir -p "$(dirname "$DERIVED_DATA")" "$(dirname "$RESULT_BUNDLE")"
+
+  # NOTE: EXTRA_ARGS is intentionally unquoted to allow normal shell splitting.
+  # shellcheck disable=SC2086
+  xcrun xcodebuild \
+    "$XCB_KIND" "$XCB_PATH" \
+    -scheme "$SCHEME" \
+    -configuration "$CONFIGURATION" \
+    -destination "$DESTINATION" \
+    -derivedDataPath "$DERIVED_DATA" \
+    "$ACTION" \
+    "$@" \
+    $EXTRA_ARGS
+}
+
+case "$CMD" in
+  clean) run_xcodebuild clean build ;;
+  build) run_xcodebuild build ;;
+  test)
+    # shellcheck disable=SC2086
+    xcrun xcodebuild \
+      "$XCB_KIND" "$XCB_PATH" \
+      -scheme "$SCHEME" \
+      -configuration "$CONFIGURATION" \
+      -destination "$DESTINATION" \
+      -derivedDataPath "$DERIVED_DATA" \
+      -resultBundlePath "$RESULT_BUNDLE" \
+      test \
+      $EXTRA_ARGS
+    ;;
+  open)
+    if [ "$XCB_KIND" = "-workspace" ]; then open "$XCB_PATH"; else open "$XCB_PATH"; fi
+    ;;
+  *) usage; exit 1 ;;
+esac

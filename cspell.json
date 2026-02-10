@@ -1,0 +1,43 @@
+{
+    "version": "0.2",
+    "language": "en,en-US",
+    "words": [
+        "antigravity",
+        "cdpath",
+        "deriveddata",
+        "masakitakemura",
+        "mkdirp",
+        "nounset",
+        "nvim",
+        "pbxproj",
+        "pipefail",
+        "plutil",
+        "scas",
+        "shellcheck",
+        "sourcekit",
+        "sourcekit-lsp",
+        "sswg",
+        "swiftc",
+        "swiftpm",
+        "xccheckout",
+        "xcode",
+        "xcodebuild",
+        "xcodeproj",
+        "xcops",
+        "xcresult",
+        "xcrun",
+        "xcscmblueprint",
+        "xcuserdata",
+        "xcuserstate",
+        "xcworkspace",
+        "zod"
+    ],
+    "ignorePaths": [
+        ".git",
+        ".local",
+        ".vscode",
+        "DerivedData",
+        "*.xcresult",
+        "package-lock.json"
+    ]
+}
