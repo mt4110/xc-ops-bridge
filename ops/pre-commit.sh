@@ -2,7 +2,7 @@
 # xc-ops-bridge pre-commit hook
 # Block commits to forbidden files
 
-RESTRICTED_PATHS=".local/|DerivedData/|xcuserdata/|.xcresult"
+RESTRICTED_PATHS="\.local/|DerivedData/|xcuserdata/|\.xcresult"
 
 if git diff --cached --name-only | grep -E "$RESTRICTED_PATHS" > /dev/null; then
     echo "=========================================================="

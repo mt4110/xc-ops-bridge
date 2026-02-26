@@ -62,18 +62,33 @@ XCB_KIND=""
 XCB_PATH=""
 XCB_DIR="$ROOT"
 
-if [ -n "${XCODE_WORKSPACE:-}" ] && [ -e "$ROOT/$XCODE_WORKSPACE" ]; then
-  XCB_KIND="-workspace"
-  XCB_PATH="$ROOT/$XCODE_WORKSPACE"
-elif [ -n "${XCODE_PROJECT:-}" ] && [ -e "$ROOT/$XCODE_PROJECT" ]; then
-  # If it is a directory but contains Package.swift, support it as an SPM directory
-  if [[ "$XCODE_PROJECT" != *.xcodeproj ]] && [ -f "$ROOT/$XCODE_PROJECT/Package.swift" ]; then
-    XCB_KIND=""
-    XCB_PATH="$ROOT/$XCODE_PROJECT/Package.swift"
-    XCB_DIR="$ROOT/$XCODE_PROJECT"
+if [ -n "${XCODE_WORKSPACE:-}" ]; then
+  if [ -e "$ROOT/$XCODE_WORKSPACE" ]; then
+    XCB_KIND="-workspace"
+    XCB_PATH="$ROOT/$XCODE_WORKSPACE"
   else
-    XCB_KIND="-project"
-    XCB_PATH="$ROOT/$XCODE_PROJECT"
+    die "XCODE_WORKSPACE is set to '$XCODE_WORKSPACE' but not found."
+  fi
+elif [ -n "${XCODE_PROJECT:-}" ]; then
+  if [ -e "$ROOT/$XCODE_PROJECT" ]; then
+    case "$XCODE_PROJECT" in
+      *.xcodeproj)
+        XCB_KIND="-project"
+        XCB_PATH="$ROOT/$XCODE_PROJECT"
+        ;;
+      *)
+        if [ -f "$ROOT/$XCODE_PROJECT/Package.swift" ]; then
+          XCB_KIND=""
+          XCB_PATH="$ROOT/$XCODE_PROJECT/Package.swift"
+          XCB_DIR="$ROOT/$XCODE_PROJECT"
+        else
+          XCB_KIND="-project"
+          XCB_PATH="$ROOT/$XCODE_PROJECT"
+        fi
+        ;;
+    esac
+  else
+    die "XCODE_PROJECT is set to '$XCODE_PROJECT' but not found."
   fi
 elif [ -f "$ROOT/Package.swift" ]; then
   XCB_KIND=""

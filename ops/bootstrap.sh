@@ -78,7 +78,7 @@ else
   say "warning: .git/hooks not found, skipping hook install."
 fi
 
-# 6) sanity check xcodebuild
+# 7) sanity check xcodebuild
 if xcrun xcodebuild -version >/dev/null 2>&1; then
   say "xcodebuild: OK"
 else
