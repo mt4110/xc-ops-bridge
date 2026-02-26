@@ -49,9 +49,8 @@ fi
 if lsp_ver=$(xcrun sourcekit-lsp --version 2>/dev/null); then
   status "sourcekit-lsp" "OK"
 else
-  status "sourcekit-lsp" "FAIL"
-  fail_hint "Needed for editor support. Usually part of Xcode/CLT."
-  has_error=1
+  status "sourcekit-lsp" "WARNING"
+  fail_hint "Needed for editor support, but not required for CLI builds. Usually part of Xcode/CLT."
 fi
 
 # 4. Check Environment Config

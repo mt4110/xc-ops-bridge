@@ -57,55 +57,105 @@ RESULT_BUNDLE="${XCODE_RESULT_BUNDLE:-.local/xcode/TestResults.xcresult}"
 
 [ -n "$SCHEME" ] || die "XCODE_SCHEME is empty in ops/xcode.env"
 
-# Prefer workspace if set and exists; else project
+# Prefer workspace if set and exists; else project; else SPM Package.swift
 XCB_KIND=""
 XCB_PATH=""
+XCB_DIR="$ROOT"
 
-if [ -n "${XCODE_WORKSPACE:-}" ] && [ -f "$ROOT/$XCODE_WORKSPACE" ]; then
-  XCB_KIND="-workspace"
-  XCB_PATH="$ROOT/$XCODE_WORKSPACE"
-elif [ -n "${XCODE_PROJECT:-}" ] && [ -f "$ROOT/$XCODE_PROJECT" ]; then
-  XCB_KIND="-project"
-  XCB_PATH="$ROOT/$XCODE_PROJECT"
+if [ -n "${XCODE_WORKSPACE:-}" ]; then
+  if [ -e "$ROOT/$XCODE_WORKSPACE" ]; then
+    XCB_KIND="-workspace"
+    XCB_PATH="$ROOT/$XCODE_WORKSPACE"
+  else
+    die "XCODE_WORKSPACE is set to '$XCODE_WORKSPACE' but not found."
+  fi
+elif [ -n "${XCODE_PROJECT:-}" ]; then
+  if [ -e "$ROOT/$XCODE_PROJECT" ]; then
+    case "$XCODE_PROJECT" in
+      *.xcodeproj)
+        XCB_KIND="-project"
+        XCB_PATH="$ROOT/$XCODE_PROJECT"
+        ;;
+      *)
+        if [ -f "$ROOT/$XCODE_PROJECT/Package.swift" ]; then
+          XCB_KIND=""
+          XCB_PATH="$ROOT/$XCODE_PROJECT/Package.swift"
+          XCB_DIR="$ROOT/$XCODE_PROJECT"
+        else
+          XCB_KIND="-project"
+          XCB_PATH="$ROOT/$XCODE_PROJECT"
+        fi
+        ;;
+    esac
+  else
+    die "XCODE_PROJECT is set to '$XCODE_PROJECT' but not found."
+  fi
+elif [ -f "$ROOT/Package.swift" ]; then
+  XCB_KIND=""
+  XCB_PATH="$ROOT/Package.swift"
+elif [ -n "${SCHEME:-}" ] && [ -d "$ROOT/$SCHEME" ] && [ -f "$ROOT/$SCHEME/Package.swift" ]; then
+  XCB_KIND=""
+  XCB_PATH="$ROOT/$SCHEME/Package.swift"
+  XCB_DIR="$ROOT/$SCHEME"
 else
-  die "set XCODE_WORKSPACE or XCODE_PROJECT (and ensure file exists)"
+  die "set XCODE_WORKSPACE or XCODE_PROJECT, or provide Package.swift"
 fi
+
+# Make paths absolute before cd
+case "$DERIVED_DATA" in /*) ;; *) DERIVED_DATA="$ROOT/$DERIVED_DATA" ;; esac
+case "$RESULT_BUNDLE" in /*) ;; *) RESULT_BUNDLE="$ROOT/$RESULT_BUNDLE" ;; esac
 
 run_xcodebuild() {
   ACTION="$1"
   shift || true
   mkdir -p "$(dirname "$DERIVED_DATA")" "$(dirname "$RESULT_BUNDLE")"
 
+  cd "$XCB_DIR" || die "failed to cd to $XCB_DIR"
+
   # NOTE: EXTRA_ARGS is intentionally unquoted to allow normal shell splitting.
   # shellcheck disable=SC2086
-  xcrun xcodebuild \
-    "$XCB_KIND" "$XCB_PATH" \
-    -scheme "$SCHEME" \
+  set -- -scheme "$SCHEME" \
     -configuration "$CONFIGURATION" \
     -destination "$DESTINATION" \
     -derivedDataPath "$DERIVED_DATA" \
     "$ACTION" \
     "$@" \
     $EXTRA_ARGS
+
+  if [ -n "$XCB_KIND" ]; then
+    xcrun xcodebuild "$XCB_KIND" "$XCB_PATH" "$@"
+  else
+    xcrun xcodebuild "$@"
+  fi
 }
 
 case "$CMD" in
   clean) run_xcodebuild clean build ;;
   build) run_xcodebuild build ;;
   test)
+    cd "$XCB_DIR" || die "failed to cd to $XCB_DIR"
+    mkdir -p "$(dirname "$DERIVED_DATA")" "$(dirname "$RESULT_BUNDLE")"
     # shellcheck disable=SC2086
-    xcrun xcodebuild \
-      "$XCB_KIND" "$XCB_PATH" \
-      -scheme "$SCHEME" \
+    set -- -scheme "$SCHEME" \
       -configuration "$CONFIGURATION" \
       -destination "$DESTINATION" \
       -derivedDataPath "$DERIVED_DATA" \
       -resultBundlePath "$RESULT_BUNDLE" \
       test \
       $EXTRA_ARGS
+
+    if [ -n "$XCB_KIND" ]; then
+      xcrun xcodebuild "$XCB_KIND" "$XCB_PATH" "$@"
+    else
+      xcrun xcodebuild "$@"
+    fi
     ;;
   open)
-    if [ "$XCB_KIND" = "-workspace" ]; then open "$XCB_PATH"; else open "$XCB_PATH"; fi
+    if [ -n "$XCB_PATH" ] && [ -e "$XCB_PATH" ]; then
+      open "$XCB_PATH"
+    else
+      die "could not find valid project or Package.swift to open"
+    fi
     ;;
   *) usage; exit 1 ;;
 esac
