@@ -2,9 +2,10 @@
 
 このリポジトリのゴールはシンプルです。
 
-- **どのIDEでSwiftを書いてもOK**
+- **どのエディタ/IDEでSwiftを書いてもOK**
 - ただし最終的に **CLI（ops/xc）で clean/build/test が再現**できること
-- **CLIが真実**。IDEは趣味。
+- **CLIが真実**。CLIを基準とすることで、チームやAIエージェントの自動化体験が向上します。
+- プロジェクトは `.xcodeproj`、`.xcworkspace`、純粋な `Package.swift` のどれでも動作します。
 
 ---
 

@@ -64,8 +64,18 @@ else
     say "note: install Xcode, open it once, accept license, then rerun ./ops/bootstrap.sh"
     exit 0
   else
-    say "skip: you can still edit code, but build/test will fail until Xcode is installed."
+    say "skip: you can still edit code, but you will need Xcode or Xcodes CLI to build/test natively."
   fi
+fi
+
+# 6) Install Git pre-commit hook for safety
+say "installing pre-commit hook to block forbidden files..."
+if [ -d "$ROOT_DIR/.git/hooks" ]; then
+  ln -sf "$OPS_DIR/pre-commit.sh" "$ROOT_DIR/.git/hooks/pre-commit"
+  chmod +x "$ROOT_DIR/.git/hooks/pre-commit"
+  say "pre-commit hook installed: OK"
+else
+  say "warning: .git/hooks not found, skipping hook install."
 fi
 
 # 6) sanity check xcodebuild
