@@ -34,7 +34,13 @@ def main() -> int:
     else:
         ok("ops/xcode.env exists")
 
-    scheme_list = find_files("**/*.xcodeproj/xcshareddata/xcschemes/*.xcscheme")
+    scheme_patterns = (
+        "**/*.xcodeproj/xcshareddata/xcschemes/*.xcscheme",
+        "**/*.xcworkspace/xcshareddata/xcschemes/*.xcscheme",
+    )
+    scheme_list = sorted(
+        {scheme for pattern in scheme_patterns for scheme in find_files(pattern)}
+    )
     secret_key_pattern = re.compile(r"(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD)", re.IGNORECASE)
     exposed_scheme_keys = []
     for scheme in scheme_list:
