@@ -3,6 +3,11 @@
 Edit Swift with your favorite editor (Antigravity / VSCode / Zed / JetBrains / nvim / Emacs),
 but unify build/test execution via Xcode (xcodebuild).
 
+> **This repository does not include your application's Xcode project.**
+> `HelloWorld/` is only a sample Swift package used to verify `doctor` and CI.
+> Place your `.xcodeproj` or `.xcworkspace` inside this repository and configure
+> its relative path in `ops/xcode.env`.
+
 ## Concept
 - **Edit Anywhere**: Feel free to use your favorite editor.
 - **Unify Execution**: Always build/test via `ops/xc` (or `make`).
@@ -17,15 +22,71 @@ but unify build/test execution via Xcode (xcodebuild).
 
 ## Quickstart
 
+### 1. Add your Xcode project
+
+For a project named `MyApp`, use a layout such as:
+
+```text
+xc-ops-bridge/
+├── MyApp/
+│   ├── MyApp.xcodeproj
+│   └── ...
+├── HelloWorld/          # doctor/CI sample
+├── ops/
+├── Makefile
+└── README.md
+```
+
+For a workspace-based project, place `MyApp/MyApp.xcworkspace` in the same way.
+
+### 2. Create the local configuration
+
 ```bash
+cd /Users/takemuramasaki/_workspace/xc-ops-bridge
 make bootstrap
-# Edit ops/xcode.env to point to your project (or HelloWorld)
+```
+
+Edit the generated `ops/xcode.env`. For an Xcode project:
+
+```sh
+XCODE_WORKSPACE=""
+XCODE_PROJECT="MyApp/MyApp.xcodeproj"
+XCODE_SCHEME="MyApp"
+```
+
+For an Xcode workspace:
+
+```sh
+XCODE_WORKSPACE="MyApp/MyApp.xcworkspace"
+XCODE_PROJECT=""
+XCODE_SCHEME="MyApp"
+```
+
+All paths are relative to the `xc-ops-bridge/` directory.
+
+### 3. Diagnose, build, and test
+
+```bash
 make doctor
 make build
 make test
 ```
 
+`make doctor` displays the project or workspace, scheme, and destination selected
+by `ops/xcode.env`, then builds and tests that target. A missing test target is
+reported as a warning. Before you add an Xcode project, the default target is the
+bundled `HelloWorld` package.
+
 - ※ Run `make open` to instantly open Xcode if needed.
+
+`make doctor` checks the selected Xcode, version, license, SDKs, and Simulator
+runtimes, then builds and tests the configured target with `xcodebuild`.
+Diagnostic logs and build artifacts stay under `.local/doctor/`. It also warns
+about enabled secret-like values in shared schemes without printing those values.
+
+GitHub Actions runs for pushes and pull requests, on demand, and every Monday at
+00:00 UTC. It does not hook the Xcode updater; run the same `doctor` after a local
+Xcode update to verify compatibility.
 
 ## Recommended AI Editors & Extensions
 

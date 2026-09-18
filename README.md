@@ -3,6 +3,11 @@
 好きなエディタ（Antigravity / VSCode / Zed / JetBrains / nvim / Emacs）で Swift を編集し、
 ビルド/テストは Xcode（xcodebuild）に統一するための運用キット。
 
+> **このリポジトリには実アプリのXcodeプロジェクトは入っていません。**
+> `HelloWorld/` は `doctor` とCIを確認するためのサンプルSwift Packageです。
+> 自分の `.xcodeproj` または `.xcworkspace` をこのリポジトリ内へ配置し、
+> `ops/xcode.env` からその相対パスを指定して使います。
+
 ## コンセプト
 - **編集は自由**：使い慣れたエディタで開発を進められます。
 - **実行は統一**：ビルドやテストは `ops/xc` （または `make`）から行います。
@@ -15,14 +20,70 @@
   - 本リポジトリには検証用の `HelloWorld/` (SPMパッケージ) が含まれており、すぐに動作確認できます。
 
 ## Quickstart
+
+### 1. Xcodeプロジェクトを配置する
+
+例えば `MyApp` を使う場合、次のように配置します。
+
+```text
+xc-ops-bridge/
+├── MyApp/
+│   ├── MyApp.xcodeproj
+│   └── ...
+├── HelloWorld/          # doctor/CI用サンプル
+├── ops/
+├── Makefile
+└── README.md
+```
+
+Workspaceを使うプロジェクトなら、同様に `MyApp/MyApp.xcworkspace` を配置します。
+
+### 2. ローカル設定を作る
+
 ```bash
+cd /Users/takemuramasaki/_workspace/xc-ops-bridge
 make bootstrap
-# ops/xcode.env を自分のプロジェクト（またはHelloWorld）に合わせて編集
+```
+
+生成された `ops/xcode.env` を編集します。Xcode Projectの場合:
+
+```sh
+XCODE_WORKSPACE=""
+XCODE_PROJECT="MyApp/MyApp.xcodeproj"
+XCODE_SCHEME="MyApp"
+```
+
+Xcode Workspaceの場合:
+
+```sh
+XCODE_WORKSPACE="MyApp/MyApp.xcworkspace"
+XCODE_PROJECT=""
+XCODE_SCHEME="MyApp"
+```
+
+パスはすべて `xc-ops-bridge/` からの相対パスです。
+
+### 3. 診断・ビルド・テスト
+
+```bash
 make doctor
 make build
 make test
 ```
+
+`make doctor` は `ops/xcode.env` で選択したproject/workspace、scheme、destinationを表示し、
+その対象を実際にbuild/testします。テストtargetがない場合は警告として表示します。
+Xcodeプロジェクトをまだ配置していないデフォルト設定では、同梱の `HelloWorld` が対象です。
+
 - ※ Xcodeを開きたい場合は `make open` で開けます。
+
+`make doctor` はXcodeの選択先、バージョン、ライセンス、SDK、Simulator runtimeを確認し、
+最後に設定対象を `xcodebuild` で実際にbuild/testします。診断ログと生成物は
+`.local/doctor/` に隔離されます。shared schemeに有効な秘密情報らしい環境変数がある場合は、
+値を表示せず警告します。
+
+GitHub Actionsはpush/PRに加えて、手動実行と毎週月曜09:00（日本時間）の定期確認に対応します。
+Xcode更新そのものはフックせず、更新後に同じ `doctor` を実行して互換性を確認します。
 
 ## AIエディタ / 拡張機能のおすすめ
 - **VS Code**: 拡張機能 **"Swift" (sswg.swift)** を推奨します。

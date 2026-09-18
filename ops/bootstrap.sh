@@ -1,13 +1,13 @@
 #!/bin/sh
 set -eu
 
-OPS_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ROOT_DIR=$(CDPATH= cd -- "$OPS_DIR/.." && pwd)
+OPS_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+ROOT_DIR=$(CDPATH='' cd -- "$OPS_DIR/.." && pwd)
 
 say() { printf "%s\n" "$*"; }
 ask() {
   printf "%s [y/N]: " "$1"
-  read ans || true
+  read -r ans || true
   case "${ans:-}" in
     y|Y|yes|YES) return 0 ;;
     *) return 1 ;;

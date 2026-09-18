@@ -14,13 +14,17 @@ DerivedData/
 *.xcscmblueprint
 
 # User-specific Xcode data
-*.xcodeproj/xcuserdata/
-*.xcworkspace/xcuserdata/
+**/*.xcodeproj/xcuserdata/
+**/*.xcworkspace/xcuserdata/
 
 # SwiftPM
 .build/
 Packages/
 Package.resolved
+
+# Python tooling
+__pycache__/
+*.pyc
 
 # Editors
 .idea/

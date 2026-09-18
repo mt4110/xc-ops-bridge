@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import os
+import re
 import sys
-import glob
+import xml.etree.ElementTree as ET
+from pathlib import Path
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+IGNORED_PARTS = {".build", ".git", ".local", "DerivedData", "Packages"}
 
 def say(msg: str) -> None:
     print(msg)
@@ -15,7 +18,11 @@ def ok(msg: str) -> None:
     print(f"[OK] {msg}")
 
 def find_files(pattern: str):
-    return glob.glob(os.path.join(ROOT, pattern), recursive=True)
+    return [
+        str(path)
+        for path in Path(ROOT).glob(pattern)
+        if not IGNORED_PARTS.intersection(path.parts)
+    ]
 
 def main() -> int:
     issues = 0
@@ -27,48 +34,30 @@ def main() -> int:
     else:
         ok("ops/xcode.env exists")
 
-    pbx_list = find_files("**/*.xcodeproj/project.pbxproj")
-    if not pbx_list:
-        warn("No .xcodeproj/project.pbxproj found (skipping .gitignore target check)")
+    scheme_list = find_files("**/*.xcodeproj/xcshareddata/xcschemes/*.xcscheme")
+    secret_key_pattern = re.compile(r"(?:API[_-]?KEY|TOKEN|SECRET|PASSWORD)", re.IGNORECASE)
+    exposed_scheme_keys = []
+    for scheme in scheme_list:
+        try:
+            root = ET.parse(scheme).getroot()
+        except (ET.ParseError, OSError) as e:
+            warn(f"Failed to inspect shared scheme: {os.path.relpath(scheme, ROOT)} ({e})")
+            continue
+
+        for variable in root.findall(".//EnvironmentVariable"):
+            key = variable.get("key", "")
+            value = variable.get("value", "")
+            enabled = variable.get("isEnabled", "NO") == "YES"
+            if enabled and value and secret_key_pattern.search(key):
+                exposed_scheme_keys.append((os.path.relpath(scheme, ROOT), key))
+
+    if exposed_scheme_keys:
+        for scheme, key in exposed_scheme_keys:
+            warn(f"Shared scheme enables secret-like environment variable '{key}': {scheme}")
+        say("Fix: disable or remove secret values from shared schemes; load them from an ignored local source.")
+        issues += len(exposed_scheme_keys)
     else:
-        found = False
-        for p in pbx_list:
-            try:
-                data = open(p, "r", encoding="utf-8", errors="ignore").read()
-            except Exception as e:
-                warn(f"Failed to read pbxproj: {p} ({e})")
-                continue
-            if ".gitignore" in data:
-                found = True
-                warn(f".gitignore appears in Xcode project file: {os.path.relpath(p, ROOT)}")
-        if found:
-            say("Fix (manual, recommended):")
-            say("  1) Open Xcode")
-            say("  2) Select .gitignore in Project Navigator")
-            say("  3) File Inspector -> Target Membership -> uncheck all")
-            issues += 1
-        else:
-            ok("No .gitignore reference detected in pbxproj")
-
-    svm_list = find_files("**/SettingsViewModel.swift")
-    if not svm_list:
-        ok("SettingsViewModel.swift not found (skipping MainActor guidance)")
-    else:
-        for s in svm_list:
-            rel = os.path.relpath(s, ROOT)
-            try:
-                txt = open(s, "r", encoding="utf-8", errors="ignore").read()
-            except Exception as e:
-                warn(f"Failed to read Swift file: {rel} ({e})")
-                continue
-
-            if "SettingsViewModel" in txt and "@MainActor" not in txt:
-                warn(f"@MainActor not found in {rel} (consider annotating SettingsViewModel with @MainActor)")
-                issues += 1
-
-            if "catch" in txt and ("try" not in txt and "throw" not in txt):
-                warn(f"{rel} contains 'catch' but no 'try/throw' found (possible unreachable catch; please review)")
-                issues += 1
+        ok("No enabled secret-like values detected in shared schemes")
 
     if issues == 0:
         ok("doctor_check: no issues detected")

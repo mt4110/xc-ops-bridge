@@ -4,7 +4,7 @@
 
 ## 最短ルート（Shortest Path）
 1. **初期化**: `make bootstrap`
-2. **診断**: `make doctor`（ここが通れば、どのエディタでも戦える）
+2. **診断**: `make doctor`（環境確認に加えて、設定対象を実際にbuild/test）
 3. **ビルド**: `make build`
 4. **テスト**: `make test`
 
@@ -16,5 +16,5 @@
   - 編集して保存したら、また `make test` で検証します。
 
 ## 困ったときは
-- **ビルドエラー？**: `make doctor` を見てください。誘導が出ます。
+- **ビルドエラー？**: `make doctor` を実行し、失敗時は `.local/doctor/xcodebuild.log` を確認してください。
 - **ゴミが溜まった？**: `make clean` で `.local/` 内の生成物を消せます。
