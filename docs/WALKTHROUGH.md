@@ -49,10 +49,11 @@ git commit -m "chore: stop tracking ops/xcode.env (local only)"
 
 ---
 
-## 2. destination を固定する（ログ静音化の主犯対策）
+## 2. destination を固定する
 
-Xcodeは macOS の destination が複数見つかると警告を出しがちです。
-このリポでは **macOS/arm64 をデフォルト**にして、PRレビューを静かにします。
+Xcodeが意図しないSimulatorや実機を選ばないよう、このリポでは
+**macOS/arm64 をデフォルト**にします。XcodeのバージョンやPackageの対応platformによっては、
+同じMac上のnative/Catalyst等が候補として表示される警告が残ります。これはbuild失敗ではありません。
 
 例（arm64固定）:
 
@@ -77,7 +78,8 @@ bash ops/xc build -destination "platform=iOS Simulator,name=iPhone 16,OS=latest"
 ## 3. よくあるノイズと対処（Detect + Guide）
 
 ### 3.1 WARNING: Using the first of multiple matching destinations
-→ destination を固定（arm64）で解決。
+まず `XCODE_DESTINATION` を対象platform、OS、端末名まで具体化してください。
+macOS向けSwift Packageでは、Xcodeが同じMacのnative/Catalyst等を列挙して警告を残す場合があります。
 
 ### 3.2 warning: no rule to process file .../.gitignore
 `.gitignore` が Xcode Target（Resources等）に混入している時に出ます。
@@ -111,5 +113,5 @@ tail -n 120 .local/build.log
 ## 5. このリポの「破綻しない約束」
 - `ops/xcode.env` はローカル用（Git追跡しない）
 - `ops/xc` で再現できれば勝ち（IDEは自由）
-- Doctor は read-only（Detect + Guide）
-- destination 固定でログを静音化し、PRレビューをラクにする
+- Doctor は環境を変更せず、診断用のbuild/test生成物だけを `.local/doctor/` に書く
+- destination を明示し、意図しない実行先を避ける
