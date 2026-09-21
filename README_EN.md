@@ -107,3 +107,8 @@ To prevent repository corruption, a Git `pre-commit` hook automatically blocks t
 - Editors: [docs/EDITORS.md](docs/EDITORS.md)
 - Xcode setup: [docs/XCODE_SETUP.md](docs/XCODE_SETUP.md)
 - Development: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+
+## License
+
+Licensed under the MIT License (SPDX identifier: `MIT`). See [LICENSE](LICENSE)
+for the full text.

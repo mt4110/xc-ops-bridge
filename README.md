@@ -102,3 +102,7 @@ Xcode更新そのものはフックせず、更新後に同じ `doctor` を実�
 - Editors: [docs/EDITORS.md](docs/EDITORS.md)
 - Xcode setup: [docs/XCODE_SETUP.md](docs/XCODE_SETUP.md)
 - Development: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)
+
+## ライセンス
+
+MIT License（SPDX識別子: `MIT`）です。全文は [LICENSE](LICENSE) を参照してください。
